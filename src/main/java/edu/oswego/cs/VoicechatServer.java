@@ -60,9 +60,14 @@ public class VoicechatServer {
     }
 
     public void createChatroom(String name) {
-        chatrooms.put(chatroomCount, new Chatroom(name));
-        chatroomCount++;
-        displayInfo("Chatroom Create: " + name);
+        if (! chatrooms.values().stream()
+                .map(Chatroom::getChatroomName)
+                .anyMatch(cname -> cname.equals(name))) {
+
+            chatrooms.put(chatroomCount, new Chatroom(name));
+            chatroomCount++;
+            displayInfo("Chatroom Create: " + name);
+        }
     }
 
     public String[] getChatrooms() {
@@ -136,7 +141,7 @@ public class VoicechatServer {
         }
     }
 
-    private void displayInfo(String msg) {
+    public void displayInfo(String msg) {
         System.out.println(TEXT_GREEN + "[INFO]" + TEXT_RESET + " " + msg);
     }
 
