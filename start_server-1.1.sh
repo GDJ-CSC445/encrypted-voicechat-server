@@ -3,7 +3,7 @@
 # Shell script for cs server easy deployment
 # Problem on the Oswego servers where the version of java does not work with maven
 export JAVA_HOME=/usr/lib/jvm/java-1.11.0-openjdk-amd64
-source etc/environment
+source /etc/environment
 
 mvn clean
 mvn package
