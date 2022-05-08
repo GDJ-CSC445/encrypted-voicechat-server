@@ -110,7 +110,8 @@ public class ClientConnection extends Thread {
 
                 byte[] buffer = new byte[MAX_BUFFER];
                 // ready to accept a new packet at any time - blocks until a packet is received
-                in.read(buffer, 0, buffer.length);
+                if (-1 == in.read(buffer, 0, buffer.length))
+                    break;
 
                 // spawns a new thread to parse packet
                 new Thread( () -> {
