@@ -6,6 +6,7 @@ import edu.oswego.cs.network.packets.SoundData;
 import io.github.cdimascio.dotenv.Dotenv;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ public class VoicechatServer {
     public static ConcurrentHashMap<Integer, Chatroom> chatrooms = new ConcurrentHashMap<>();
 
     private static final String TEXT_GREEN = "\u001B[32m";
+    public static final String TEXT_RED = "\u001B[31m";
     private static final String TEXT_RESET = "\u001B[0m";
 
     public VoicechatServer(String host, int port, int connectionStartingPort) {
@@ -98,7 +100,15 @@ public class VoicechatServer {
             String HOST = env.get("HOST");
             int PORT = Integer.parseInt(env.get("SERVER_PORT"));
             int STARTING_PORT = Integer.parseInt(env.get("CONNECTION_STARTING_PORT"));
+
+            if (! HOST.equals("localhost") && ! HOST.contains(InetAddress.getLocalHost().getHostName())) {
+                System.out.println(TEXT_RED + "[ERROR]" + TEXT_RESET + " Host name in .env does not match server host name.");
+                System.exit(1);
+            }
+
             VoicechatServer server = new VoicechatServer(HOST, PORT, STARTING_PORT);
+
+
             server.start();
 //            HashMap<Integer, SoundData> soundDataPackets = new HashMap<>();
 //            ServerSocket serverSocket = new ServerSocket(1500);
