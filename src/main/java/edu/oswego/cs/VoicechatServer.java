@@ -49,7 +49,7 @@ public class VoicechatServer {
             Socket clientSocket = serverSocket.accept();
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             // opens a new server socket on a new port
-            List<Integer> usedPorts = (new ArrayList<>(clientConnections.keySet()));
+            List<Integer> usedPorts = new ArrayList<>(clientConnections.keySet());
             Collections.sort(usedPorts);
 
             int reusedPort = -1;
@@ -59,6 +59,7 @@ public class VoicechatServer {
                 reusedPort = usedPorts.get(portIndex) + 1;
                 break;
             }
+
             ClientConnection connection = (reusedPort == -1) ?
                     new ClientConnection(CONNECTION_PORT, this) :
                     new ClientConnection(reusedPort, this);
@@ -79,14 +80,14 @@ public class VoicechatServer {
         }
     }
 
-    public void createChatroom(String name) {
+    public void createChatroom(String name, int numberOfParticipants) {
         if (! chatrooms.values().stream()
                 .map(Chatroom::getChatroomName)
                 .anyMatch(cname -> cname.equals(name))) {
 
-            chatrooms.put(chatroomCount, new Chatroom(name));
+            chatrooms.put(chatroomCount, new Chatroom(name, numberOfParticipants));
             chatroomCount++;
-            displayInfo("Chatroom Create: " + name);
+            displayInfo("Chatroom Created: " + name);
         }
     }
 
