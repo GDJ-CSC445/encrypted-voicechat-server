@@ -46,19 +46,18 @@ public class VoicechatServer {
         ServerSocket serverSocket = new ServerSocket(PORT);
 
         for (;;CONNECTION_PORT++) {
-            System.out.println("Waiting for connection on PORT:\t" + CONNECTION_PORT);
             Socket clientSocket = serverSocket.accept();
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             // opens a new server socket on a new port
-            List<Integer> usedPorts = new ArrayList<>(clientConnections.keySet())
-                    .stream()
-                    .sorted()
-                    .collect(Collectors.toList());
+            List<Integer> usedPorts = (new ArrayList<>(clientConnections.keySet()));
+            Collections.sort(usedPorts);
+
             int reusedPort = -1;
             for (int portIndex = 0; portIndex < usedPorts.size(); portIndex++) {
                 if (portIndex == usedPorts.size() - 1) continue;
                 if (usedPorts.get(portIndex) == usedPorts.get(portIndex + 1) - 1 ) continue;
                 reusedPort = usedPorts.get(portIndex) + 1;
+                break;
             }
             ClientConnection connection = (reusedPort == -1) ?
                     new ClientConnection(CONNECTION_PORT, this) :
@@ -74,7 +73,7 @@ public class VoicechatServer {
                 CONNECTION_PORT --;
             }
             // messages the client a new port to talk to the server on
-
+            displayInfo("New connection on PORT:\t" + connection.getPort());
             connection.start();
             clientSocket.close();
         }
