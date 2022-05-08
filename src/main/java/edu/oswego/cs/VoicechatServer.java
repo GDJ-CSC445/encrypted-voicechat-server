@@ -9,11 +9,9 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Main Voice chat server that handles all incoming connection requests from clients
@@ -52,7 +50,17 @@ public class VoicechatServer {
             Socket clientSocket = serverSocket.accept();
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             // opens a new server socket on a new port
-            ClientConnection connection = new ClientConnection(CONNECTION_PORT, this);
+            List<Integer> usedPorts = new ArrayList<>(clientConnections.keySet());
+            int reusedPort = -1;
+            for (int portIndex = 0; portIndex < usedPorts.size(); portIndex++) {
+                if (portIndex == usedPorts.size() - 1) continue;
+                if (usedPorts.get(portIndex) == usedPorts.get(portIndex + 1) - 1 ) continue;
+                reusedPort = usedPorts.get(portIndex) + 1;
+            }
+            ClientConnection connection = (reusedPort == -1) ?
+                    new ClientConnection(CONNECTION_PORT, this) :
+                    new ClientConnection(reusedPort, this);
+
             clientConnections.put(CONNECTION_PORT, connection);
             // messages the client a new port to talk to the server on
             out.println(CONNECTION_PORT);
@@ -149,6 +157,10 @@ public class VoicechatServer {
             System.out.println("Environment variables are empty.");
             System.exit(1);
         }
+    }
+
+    public void removeConnection(int port) {
+        clientConnections.remove(port);
     }
 
     public void displayInfo(String msg) {
