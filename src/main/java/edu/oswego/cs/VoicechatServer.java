@@ -64,9 +64,17 @@ public class VoicechatServer {
                     new ClientConnection(CONNECTION_PORT, this) :
                     new ClientConnection(reusedPort, this);
 
-            clientConnections.put(CONNECTION_PORT, connection);
+            if (reusedPort == -1) {
+                clientConnections.put(CONNECTION_PORT, connection);
+                out.println(CONNECTION_PORT);
+            }
+            else {
+                clientConnections.put(reusedPort, connection);
+                out.println(reusedPort);
+                CONNECTION_PORT --;
+            }
             // messages the client a new port to talk to the server on
-            out.println(CONNECTION_PORT);
+
             connection.start();
             clientSocket.close();
         }
