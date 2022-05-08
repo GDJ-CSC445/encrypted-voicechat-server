@@ -126,6 +126,11 @@ public class ClientConnection extends Thread {
         } finally {
             voicechatServer.displayInfo("Client on port " + PORT + " has disconnected.");
             voicechatServer.removeConnection(PORT);
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

@@ -50,7 +50,10 @@ public class VoicechatServer {
             Socket clientSocket = serverSocket.accept();
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             // opens a new server socket on a new port
-            List<Integer> usedPorts = new ArrayList<>(clientConnections.keySet());
+            List<Integer> usedPorts = new ArrayList<>(clientConnections.keySet())
+                    .stream()
+                    .sorted()
+                    .collect(Collectors.toList());
             int reusedPort = -1;
             for (int portIndex = 0; portIndex < usedPorts.size(); portIndex++) {
                 if (portIndex == usedPorts.size() - 1) continue;
