@@ -169,7 +169,8 @@ public class VoicechatServer {
         }
     }
 
-    public void removeConnection(int port) {
+    public void removeConnection(int port) throws IOException {
+        clientConnections.get(port).getSocket().close();
         clientConnections.remove(port);
     }
 

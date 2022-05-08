@@ -125,9 +125,8 @@ public class ClientConnection extends Thread {
             e.printStackTrace();
         } finally {
             voicechatServer.displayInfo("Client on port " + PORT + " has disconnected.");
-            voicechatServer.removeConnection(PORT);
             try {
-                socket.close();
+                voicechatServer.removeConnection(PORT);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -136,6 +135,10 @@ public class ClientConnection extends Thread {
 
     public int getPort() {
         return PORT;
+    }
+
+    public Socket getSocket() {
+        return socket;
     }
 
     public void setChatroom(Chatroom chatroom) {
