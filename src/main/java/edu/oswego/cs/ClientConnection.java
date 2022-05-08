@@ -6,6 +6,7 @@ import edu.oswego.cs.network.packets.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 
 /**
  * Handler for client connection requests on a new thread
@@ -34,6 +35,12 @@ public class ClientConnection extends Thread {
         switch (participantData.getParticipantOpcode()) {
 
             case CREATE_SERVER: {
+                String serverName = participantData.getParams()[0];
+                if (Arrays.asList(voicechatServer.getChatrooms()).contains(serverName)) {
+                    ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.CHATROOM_EXISTS, "Chatroom name: " + serverName + "already exists.");
+                    socket.getOutputStream().write(errorPacket.getBytes());
+                    break;
+                }
                 voicechatServer.createChatroom(participantData.getParams()[0]);
                 break;
             }
