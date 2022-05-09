@@ -47,6 +47,22 @@ public class VoicechatServer {
     public void start() throws IOException {
          serverSocket = new ServerSocket(PORT);
 
+         new Thread( () -> {
+             while (true) {
+                 Scanner scanner = new Scanner(System.in);
+                 String userIn = scanner.nextLine();
+
+                 if (userIn.startsWith("-a")) {
+                     for (Chatroom chatroom : chatrooms.values()) {
+                         System.out.println(chatroom.getChatroomName());
+                         for (ClientConnection connection : chatroom.getClientConnections()) {
+                             System.out.println("\t" + connection.getPort());
+                         }
+                     }
+                 }
+             }
+         } ).start();
+
         // Forever loop to grab every possible connection
         for (;;CONNECTION_PORT++) {
             Socket clientSocket = serverSocket.accept();
