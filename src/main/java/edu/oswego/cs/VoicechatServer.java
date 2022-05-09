@@ -26,6 +26,8 @@ public class VoicechatServer {
     public static ConcurrentHashMap<Integer, ClientConnection> clientConnections = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<Integer, Chatroom> chatrooms = new ConcurrentHashMap<>();
 
+    private static ServerSocket serverSocket;
+
     private static final String TEXT_GREEN = "\u001B[32m";
     public static final String TEXT_RED = "\u001B[31m";
     private static final String TEXT_RESET = "\u001B[0m";
@@ -43,8 +45,9 @@ public class VoicechatServer {
      * @throws IOException Cannot open server on port
      */
     public void start() throws IOException {
-        ServerSocket serverSocket = new ServerSocket(PORT);
+         serverSocket = new ServerSocket(PORT);
 
+        // Forever loop to grab every possible connection
         for (;;CONNECTION_PORT++) {
             Socket clientSocket = serverSocket.accept();
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -80,7 +83,13 @@ public class VoicechatServer {
         }
     }
 
+    /**
+     * Functionality to allow participants to create chatrooms
+     * @param name Name of the requested new chatroom
+     * @param numberOfParticipants Number of participants allowed in the chatroom
+     */
     public void createChatroom(String name, int numberOfParticipants) {
+        // check if any of the chatrooms that currently exists have the same name
         if (! chatrooms.values().stream()
                 .map(Chatroom::getChatroomName)
                 .anyMatch(cname -> cname.equals(name))) {
@@ -88,9 +97,14 @@ public class VoicechatServer {
             chatrooms.put(chatroomCount, new Chatroom(name, numberOfParticipants));
             chatroomCount++;
             displayInfo("Chatroom Created: " + name);
+            return;
         }
+        displayError("Chatroom: " + name + " already exists.");
     }
 
+    /**
+     * @return Gets all chatrooms active on the server
+     */
     public String[] getChatrooms() {
         ArrayList<String> chatroomNames = new ArrayList<>() ;
         chatrooms.forEach( (index, name) -> {
@@ -99,6 +113,11 @@ public class VoicechatServer {
         return chatroomNames.toArray(new String[0]);
     }
 
+    /**
+     * Allows a chatroom to be found by its name
+     * @param chatroomName The requested chatroom name
+     * @return If the chatroom is found or else NULL
+     */
     public Chatroom findChatroomByName(String chatroomName) {
         Optional<Chatroom> chatroom = chatrooms.values().stream()
                 .filter(room -> room.getChatroomName().equals(chatroomName))
@@ -106,6 +125,17 @@ public class VoicechatServer {
         return chatroom.orElse(null);
     }
 
+    /**
+     * Handler for any disconnects from the client
+     * @param port Port being disconnected
+     * @throws IOException If socket cannot be closed
+     */
+    public void removeConnection(int port) throws IOException {
+        clientConnections.get(port).getSocket().close();
+        clientConnections.remove(port);
+    }
+
+    // Main entry point for the server. Establishes .ENV variables and some other error handling
     public static void main( String[] args ) {
 
         Dotenv env = null;
@@ -125,8 +155,9 @@ public class VoicechatServer {
                 System.exit(1);
             }
 
-            VoicechatServer server = new VoicechatServer(HOST, PORT, STARTING_PORT);
+            SIGINTHandler();
 
+            VoicechatServer server = new VoicechatServer(HOST, PORT, STARTING_PORT);
 
             server.start();
 //            HashMap<Integer, SoundData> soundDataPackets = new HashMap<>();
@@ -170,13 +201,13 @@ public class VoicechatServer {
         }
     }
 
-    public void removeConnection(int port) throws IOException {
-        clientConnections.get(port).getSocket().close();
-        clientConnections.remove(port);
-    }
 
     public void displayInfo(String msg) {
         System.out.println(TEXT_GREEN + "[INFO]" + TEXT_RESET + " " + msg);
+    }
+
+    public static void displayError(String error) {
+        System.out.println(TEXT_RED + "[ERROR]" + TEXT_RESET + " " + error);
     }
 
     private void displayServerStartup() {
@@ -194,6 +225,27 @@ public class VoicechatServer {
         displayInfo("SERVING ON PORT:\t" + this.PORT);
         System.out.println();
     }
+
+    /**
+     *  Custom SIGINT For MACOS and Linux
+     */
+    private static void SIGINTHandler() {
+        if (System.getProperty("os.name").equals("Mac OS X") ||
+                System.getProperty("os.name").equals("Linux")) {
+            Thread CUSTOM_SIGINT = new Thread( () -> {
+                clientConnections.forEach( (port, connection) -> {
+                    try {
+                        connection.getSocket().close();
+                        serverSocket.close();
+                    }
+                    catch (IOException ignored) {}
+                } );
+            });
+
+            Runtime.getRuntime().addShutdownHook(CUSTOM_SIGINT);
+        }
+    }
+
 
 
 }
