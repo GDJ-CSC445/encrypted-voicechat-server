@@ -1,6 +1,7 @@
 package edu.oswego.cs;
 
 import edu.oswego.cs.network.opcodes.ErrorOpcode;
+import edu.oswego.cs.network.opcodes.ParticipantOpcode;
 import edu.oswego.cs.network.packets.*;
 
 import java.io.*;
@@ -120,6 +121,9 @@ public class ClientConnection extends Thread {
                 chatroom.addClientConnection(PORT, this);
                 this.chatroom = chatroom;
                 voicechatServer.displayInfo("PORT " + PORT + " Has Joined Chatroom:\t" + this.chatroom.getChatroomName());
+
+                ParticipantACK participantACK = new ParticipantACK(ParticipantOpcode.JOIN, PORT);
+                socket.getOutputStream().write(participantACK.getBytes());
             }
         } catch (Exception e) {
             e.printStackTrace();
