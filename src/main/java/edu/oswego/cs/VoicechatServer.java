@@ -26,6 +26,8 @@ public class VoicechatServer {
     public static ConcurrentHashMap<Integer, ClientConnection> clientConnections = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<Integer, Chatroom> chatrooms = new ConcurrentHashMap<>();
 
+    private static ServerSocket serverSocket;
+
     private static final String TEXT_GREEN = "\u001B[32m";
     public static final String TEXT_RED = "\u001B[31m";
     private static final String TEXT_RESET = "\u001B[0m";
@@ -43,8 +45,9 @@ public class VoicechatServer {
      * @throws IOException Cannot open server on port
      */
     public void start() throws IOException {
-        ServerSocket serverSocket = new ServerSocket(PORT);
+         serverSocket = new ServerSocket(PORT);
 
+        // Forever loop to grab every possible connection
         for (;;CONNECTION_PORT++) {
             Socket clientSocket = serverSocket.accept();
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -125,8 +128,9 @@ public class VoicechatServer {
                 System.exit(1);
             }
 
-            VoicechatServer server = new VoicechatServer(HOST, PORT, STARTING_PORT);
+            SIGINTHandler();
 
+            VoicechatServer server = new VoicechatServer(HOST, PORT, STARTING_PORT);
 
             server.start();
 //            HashMap<Integer, SoundData> soundDataPackets = new HashMap<>();
@@ -194,6 +198,27 @@ public class VoicechatServer {
         displayInfo("SERVING ON PORT:\t" + this.PORT);
         System.out.println();
     }
+
+    /**
+     *  Custom SIGINT For MACOS and Linux
+     */
+    private static void SIGINTHandler() {
+        if (System.getProperty("os.name").equals("Mac OS X") ||
+                System.getProperty("os.name").equals("Linux")) {
+            Thread CUSTOM_SIGINT = new Thread( () -> {
+                clientConnections.forEach( (port, connection) -> {
+                    try {
+                        connection.getSocket().close();
+                        serverSocket.close();
+                    }
+                    catch (IOException ignored) {}
+                } );
+            });
+
+            Runtime.getRuntime().addShutdownHook(CUSTOM_SIGINT);
+        }
+    }
+
 
 
 }
