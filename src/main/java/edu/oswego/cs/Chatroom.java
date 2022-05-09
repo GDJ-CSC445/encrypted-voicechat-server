@@ -5,6 +5,8 @@ import edu.oswego.cs.network.packets.Packet;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Chatroom extends Thread {
@@ -22,6 +24,10 @@ public class Chatroom extends Thread {
     @Override
     public void run() {
 
+    }
+
+    public List<ClientConnection> getClientConnections() {
+        return new ArrayList<>(clientConnections.values());
     }
 
     public String getChatroomName() {
