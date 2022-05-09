@@ -124,7 +124,7 @@ public class VoicechatServer {
     public String[] getChatrooms() {
         ArrayList<String> chatroomNames = new ArrayList<>() ;
         chatrooms.forEach( (index, name) -> {
-            chatroomNames.add(name.getChatroomName());
+            chatroomNames.add(name.getChatroomName() + ";" + name.getChatroomSize() + "/" + name.getMaxParticipants());
         });
         return chatroomNames.toArray(new String[0]);
     }
