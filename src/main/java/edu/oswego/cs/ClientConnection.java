@@ -175,8 +175,6 @@ public class ClientConnection extends Thread {
         if (! (chatroom == null)) chatroom.broadcastPacketToChatroom(debugPacket, this);
     }
 
-
-
     public void sendPacketToClient(Packet packet) throws IOException {
         socket.getOutputStream().write(packet.getBytes());
     }
@@ -213,6 +211,7 @@ public class ClientConnection extends Thread {
             // Always try to close the TCP/IP connection if not being used
             voicechatServer.displayInfo("Client on port " + PORT + " has disconnected.");
             try {
+                if (chatroom != null) chatroom.removeClientConnection(PORT);
                 voicechatServer.removeConnection(PORT);
             } catch (IOException e) {
                 e.printStackTrace();
