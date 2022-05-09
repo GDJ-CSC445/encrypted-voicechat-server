@@ -48,10 +48,22 @@ public class ClientConnection extends Thread {
         // switch for all opcodes for participant data packets
         switch (participantData.getParticipantOpcode()) {
 
-            case CREATE_SERVER: createChatroomRequest(participantData);
-            case LIST_SERVERS: listChatroomsRequest(participantData);
-            case JOIN: joinChatroomRequest(participantData);
-            case LEAVE: leaveChatroomRequest();
+            case CREATE_SERVER: {
+                createChatroomRequest(participantData);
+                break;
+            }
+            case LIST_SERVERS: {
+                listChatroomsRequest(participantData);
+                break;
+            }
+            case JOIN: {
+                joinChatroomRequest(participantData);
+                break;
+            }
+            case LEAVE: {
+                leaveChatroomRequest();
+                break;
+            }
         }
     }
 
@@ -87,7 +99,6 @@ public class ClientConnection extends Thread {
      */
     private void joinChatroomRequest(ParticipantData participantData) throws IOException {
         try {
-            System.out.println("THESE ARE THE PARAMS: " + Arrays.toString(participantData.getParams()));
             if (chatroom == null) {
 
                 if (participantData.getParams().length == 0) {
