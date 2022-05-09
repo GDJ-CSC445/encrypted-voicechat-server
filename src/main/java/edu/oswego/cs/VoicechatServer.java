@@ -54,7 +54,7 @@ public class VoicechatServer {
 
                  if (userIn.startsWith("-a")) {
                      for (Chatroom chatroom : chatrooms.values()) {
-                         System.out.println(chatroom.getChatroomName());
+                         System.out.println(chatroom.getChatroomName() + "(" + chatroom.getChatroomSize() + "/" + chatroom.getMaxParticipants() + ")");
                          for (ClientConnection connection : chatroom.getClientConnections()) {
                              System.out.println("\t" + connection.getPort());
                          }
