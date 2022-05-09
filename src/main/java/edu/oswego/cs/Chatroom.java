@@ -11,10 +11,12 @@ public class Chatroom extends Thread {
 
     private final String name;
     private ConcurrentHashMap<Integer, ClientConnection> clientConnections;
+    private final int maxParticipants;
 
-    public Chatroom(String name) {
+    public Chatroom(String name, int maxParticipants) {
         this.name = name;
         this.clientConnections = new ConcurrentHashMap<>();
+        this.maxParticipants = maxParticipants;
     }
 
     @Override
@@ -26,8 +28,17 @@ public class Chatroom extends Thread {
         return name;
     }
 
+    public int getMaxParticipants() {
+        System.out.println(maxParticipants);
+        return maxParticipants;
+    }
+
     public void addClientConnection(int port, ClientConnection clientConnection) {
         clientConnections.put(port, clientConnection);
+    }
+
+    public int getChatroomSize() {
+        return clientConnections.size();
     }
 
     public void removeClientConnection(int port) {
