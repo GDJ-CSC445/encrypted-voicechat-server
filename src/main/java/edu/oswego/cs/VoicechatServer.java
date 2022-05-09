@@ -83,7 +83,13 @@ public class VoicechatServer {
         }
     }
 
+    /**
+     * Functionality to allow participants to create chatrooms
+     * @param name Name of the requested new chatroom
+     * @param numberOfParticipants Number of participants allowed in the chatroom
+     */
     public void createChatroom(String name, int numberOfParticipants) {
+        // check if any of the chatrooms that currently exists have the same name
         if (! chatrooms.values().stream()
                 .map(Chatroom::getChatroomName)
                 .anyMatch(cname -> cname.equals(name))) {
@@ -91,9 +97,14 @@ public class VoicechatServer {
             chatrooms.put(chatroomCount, new Chatroom(name, numberOfParticipants));
             chatroomCount++;
             displayInfo("Chatroom Created: " + name);
+            return;
         }
+        displayError("Chatroom: " + name + " already exists.");
     }
 
+    /**
+     * @return Gets all chatrooms active on the server
+     */
     public String[] getChatrooms() {
         ArrayList<String> chatroomNames = new ArrayList<>() ;
         chatrooms.forEach( (index, name) -> {
@@ -102,6 +113,11 @@ public class VoicechatServer {
         return chatroomNames.toArray(new String[0]);
     }
 
+    /**
+     * Allows a chatroom to be found by its name
+     * @param chatroomName The requested chatroom name
+     * @return If the chatroom is found or else NULL
+     */
     public Chatroom findChatroomByName(String chatroomName) {
         Optional<Chatroom> chatroom = chatrooms.values().stream()
                 .filter(room -> room.getChatroomName().equals(chatroomName))
@@ -109,6 +125,17 @@ public class VoicechatServer {
         return chatroom.orElse(null);
     }
 
+    /**
+     * Handler for any disconnects from the client
+     * @param port Port being disconnected
+     * @throws IOException If socket cannot be closed
+     */
+    public void removeConnection(int port) throws IOException {
+        clientConnections.get(port).getSocket().close();
+        clientConnections.remove(port);
+    }
+
+    // Main entry point for the server. Establishes .ENV variables and some other error handling
     public static void main( String[] args ) {
 
         Dotenv env = null;
@@ -174,13 +201,13 @@ public class VoicechatServer {
         }
     }
 
-    public void removeConnection(int port) throws IOException {
-        clientConnections.get(port).getSocket().close();
-        clientConnections.remove(port);
-    }
 
     public void displayInfo(String msg) {
         System.out.println(TEXT_GREEN + "[INFO]" + TEXT_RESET + " " + msg);
+    }
+
+    public static void displayError(String error) {
+        System.out.println(TEXT_RED + "[ERROR]" + TEXT_RESET + " " + error);
     }
 
     private void displayServerStartup() {

@@ -26,6 +26,20 @@ public class ClientConnection extends Thread {
     }
 
     /**
+     * Packet Parsing for the packet to be used as intended
+     * @param packet A packet object that contains an opcode as the first two bytes.
+     */
+    private void parsePacket(Packet packet) {
+        if (packet == null) return;
+        try {
+            switch (packet.getOpcode()) {
+                case PARTICIPANT: participantRequest((ParticipantData) packet);
+                case DEBUG:       debugRequest((DebugPacket) packet);
+            }
+        } catch (Exception e) {}
+    }
+
+    /**
      * Packet handler for Participant Data packets depending on the participant opcode .
      * @param participantData Packet that contains participant data requests
      * @throws IOException If ACK can not be sent back to the client
@@ -41,6 +55,11 @@ public class ClientConnection extends Thread {
         }
     }
 
+    /**
+     * Packet handler for listing all chatrooms on the server
+     * @param participantData Incoming packet request with opcode LIST
+     * @throws IOException If the ACK cannot be sent back to the client
+     */
     private void listChatroomsRequest(ParticipantData participantData) throws IOException {
         ParticipantACK participantACK = new ParticipantACK(
                 participantData.getParticipantOpcode(),
@@ -49,7 +68,11 @@ public class ClientConnection extends Thread {
         socket.getOutputStream().write(participantACK.getBytes());
     }
 
-    private void leaveChatroomRequest() throws IOException {
+    /**
+     * Packet handler for leaving a chatroom.
+     * Contains the opcode LEAVE
+     */
+    private void leaveChatroomRequest() {
         if (chatroom != null) {
             chatroom.removeClientConnection(PORT);
             voicechatServer.displayInfo("PORT " + PORT + " Has Left Chatroom:\t" + this.chatroom.getChatroomName());
@@ -57,6 +80,11 @@ public class ClientConnection extends Thread {
         }
     }
 
+    /**
+     * Packet handler for joining a chatroom
+     * @param participantData Incoming packet request with opcode JOIN
+     * @throws IOException
+     */
     private void joinChatroomRequest(ParticipantData participantData) throws IOException {
         try {
             System.out.println("THESE ARE THE PARAMS: " + Arrays.toString(participantData.getParams()));
@@ -87,7 +115,13 @@ public class ClientConnection extends Thread {
         }
     }
 
+    /**
+     * Packet Handler for creating a chatroom
+     * @param participantData Incoming packet request with opcode CREATE
+     * @throws IOException If an ack packet cannot be sent back to the client
+     */
     private void createChatroomRequest(ParticipantData participantData) throws IOException {
+        // Most of the content in this function is error handling
         System.out.println(Arrays.toString(participantData.getParams()));
         if (participantData.getParams().length == 0){
             ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.UNDEF, "No parameters specified in the packet.");
@@ -112,25 +146,21 @@ public class ClientConnection extends Thread {
             socket.getOutputStream().write(errorPacket.getBytes());
             return;
         }
+
+        // If no errors, then finally create the server
         voicechatServer.createChatroom(serverName, numberOfParticipants);
     }
 
+    /**
+     * Debugging functionality that was made pre-gui.
+     * @param debugPacket Contains the opcode DEBUG and has a msg attached to the packet
+     */
     private void debugRequest(DebugPacket debugPacket) {
         voicechatServer.displayInfo("Debug Message From PORT " + PORT + ":\t"+ debugPacket.getMsg());
-        if (! (chatroom == null)) {
-            chatroom.broadcastPacketToChatroom(debugPacket, this);
-        }
+        if (! (chatroom == null)) chatroom.broadcastPacketToChatroom(debugPacket, this);
     }
 
-    private void parsePacket(Packet packet) {
-        if (packet == null) return;
-        try {
-            switch (packet.getOpcode()) {
-                case PARTICIPANT: participantRequest((ParticipantData) packet);
-                case DEBUG:       debugRequest((DebugPacket) packet);
-            }
-        } catch (Exception e) {}
-    }
+
 
     public void sendPacketToClient(Packet packet) throws IOException {
         socket.getOutputStream().write(packet.getBytes());
@@ -154,8 +184,10 @@ public class ClientConnection extends Thread {
 
                 // spawns a new thread to parse packet
                 new Thread( () -> {
+                    // gets a packet object from the buffer received through TCP/IP
                     Packet packet = Packet.parse(buffer);
                     if (packet == null) return ;
+                    // calls the respective method to handle each packet received
                     parsePacket(packet);
                }).start();
 
@@ -163,6 +195,7 @@ public class ClientConnection extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
+            // Always try to close the TCP/IP connection if not being used
             voicechatServer.displayInfo("Client on port " + PORT + " has disconnected.");
             try {
                 voicechatServer.removeConnection(PORT);
