@@ -34,81 +34,85 @@ public class ClientConnection extends Thread {
         // switch for all opcodes for participant data packets
         switch (participantData.getParticipantOpcode()) {
 
-            case CREATE_SERVER: {
-                System.out.println(Arrays.toString(participantData.getParams()));
-                if (participantData.getParams().length == 0){
-                    ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.UNDEF, "No parameters specified in the packet.");
-                    socket.getOutputStream().write(errorPacket.getBytes());
-                }
-                String serverName = participantData.getParams()[0];
-                if (Arrays.asList(voicechatServer.getChatrooms()).contains(serverName)) {
-                    ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.CHATROOM_EXISTS, "Chatroom name: " + serverName + " already exists.");
-                    socket.getOutputStream().write(errorPacket.getBytes());
-                    break;
-                }
-                if (participantData.getParams().length == 1) {
-                    ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.UNDEF, "No parameter specifying the number of participants.");
-                    socket.getOutputStream().write(errorPacket.getBytes());
-                    break;
-                }
-                int numberOfParticipants;
-                try {
-                     numberOfParticipants = Integer.parseInt(participantData.getParams()[1]);
-                } catch (Exception e) {
-                    ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.UNDEF, "Can not cast number of participants (expected in parameters[2]) to a integer value.");
-                    socket.getOutputStream().write(errorPacket.getBytes());
-                    break;
-                }
-                voicechatServer.createChatroom(serverName, numberOfParticipants);
-                break;
-            }
-            case LIST_SERVERS: {
-                ParticipantACK participantACK = new ParticipantACK(
-                        participantData.getParticipantOpcode(),
-                        PORT,
-                        voicechatServer.getChatrooms());
-                socket.getOutputStream().write(participantACK.getBytes());
-                break;
-            }
-            case JOIN: {
-                try {
-                    System.out.println("THESE ARE THE PARAMS: " + Arrays.toString(participantData.getParams()));
-//                if (chatroom == null) {
-
-                    if (participantData.getParams().length == 0) {
-                        ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.CHATROOM_DNE);
-                        socket.getOutputStream().write(errorPacket.getBytes());
-                        return;
-                    }
-                    Chatroom chatroom = voicechatServer.findChatroomByName(participantData.getParams()[0]);
-                    if (chatroom == null) {
-                        ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.CHATROOM_DNE);
-                        socket.getOutputStream().write(errorPacket.getBytes());
-                        return;
-                    }
-                    if (chatroom.getMaxParticipants() <= chatroom.getChatroomSize()) {
-                        ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.CHATROOM_FULL);
-                        socket.getOutputStream().write(errorPacket.getBytes());
-                        return;
-                    }
-                    chatroom.addClientConnection(PORT, this);
-                    this.chatroom = chatroom;
-                    voicechatServer.displayInfo("PORT " + PORT + " Has Joined Chatroom:\t" + this.chatroom.getChatroomName());
-//                }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                return;
-            }
-            case LEAVE: {
-                if (chatroom != null) {
-                    chatroom.removeClientConnection(PORT);
-                    voicechatServer.displayInfo("PORT " + PORT + " Has Left Chatroom:\t" + this.chatroom.getChatroomName());
-                    chatroom = null;
-                    break;
-                }
-            }
+            case CREATE_SERVER: createChatroomRequest(participantData);
+            case LIST_SERVERS: listChatroomsRequest(participantData);
+            case JOIN: joinChatroomRequest(participantData);
+            case LEAVE: leaveChatroomRequest();
         }
+    }
+
+    private void listChatroomsRequest(ParticipantData participantData) throws IOException {
+        ParticipantACK participantACK = new ParticipantACK(
+                participantData.getParticipantOpcode(),
+                PORT,
+                voicechatServer.getChatrooms());
+        socket.getOutputStream().write(participantACK.getBytes());
+    }
+
+    private void leaveChatroomRequest() throws IOException {
+        if (chatroom != null) {
+            chatroom.removeClientConnection(PORT);
+            voicechatServer.displayInfo("PORT " + PORT + " Has Left Chatroom:\t" + this.chatroom.getChatroomName());
+            chatroom = null;
+        }
+    }
+
+    private void joinChatroomRequest(ParticipantData participantData) throws IOException {
+        try {
+            System.out.println("THESE ARE THE PARAMS: " + Arrays.toString(participantData.getParams()));
+            if (chatroom == null) {
+
+                if (participantData.getParams().length == 0) {
+                    ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.CHATROOM_DNE);
+                    socket.getOutputStream().write(errorPacket.getBytes());
+                    return;
+                }
+                Chatroom chatroom = voicechatServer.findChatroomByName(participantData.getParams()[0]);
+                if (chatroom == null) {
+                    ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.CHATROOM_DNE);
+                    socket.getOutputStream().write(errorPacket.getBytes());
+                    return;
+                }
+                if (chatroom.getMaxParticipants() <= chatroom.getChatroomSize()) {
+                    ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.CHATROOM_FULL);
+                    socket.getOutputStream().write(errorPacket.getBytes());
+                    return;
+                }
+                chatroom.addClientConnection(PORT, this);
+                this.chatroom = chatroom;
+                voicechatServer.displayInfo("PORT " + PORT + " Has Joined Chatroom:\t" + this.chatroom.getChatroomName());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void createChatroomRequest(ParticipantData participantData) throws IOException {
+        System.out.println(Arrays.toString(participantData.getParams()));
+        if (participantData.getParams().length == 0){
+            ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.UNDEF, "No parameters specified in the packet.");
+            socket.getOutputStream().write(errorPacket.getBytes());
+        }
+        String serverName = participantData.getParams()[0];
+        if (Arrays.asList(voicechatServer.getChatrooms()).contains(serverName)) {
+            ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.CHATROOM_EXISTS, "Chatroom name: " + serverName + " already exists.");
+            socket.getOutputStream().write(errorPacket.getBytes());
+            return;
+        }
+        if (participantData.getParams().length == 1) {
+            ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.UNDEF, "No parameter specifying the number of participants.");
+            socket.getOutputStream().write(errorPacket.getBytes());
+            return;
+        }
+        int numberOfParticipants;
+        try {
+            numberOfParticipants = Integer.parseInt(participantData.getParams()[1]);
+        } catch (Exception e) {
+            ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.UNDEF, "Can not cast number of participants (expected in parameters[2]) to a integer value.");
+            socket.getOutputStream().write(errorPacket.getBytes());
+            return;
+        }
+        voicechatServer.createChatroom(serverName, numberOfParticipants);
     }
 
     private void debugRequest(DebugPacket debugPacket) {
