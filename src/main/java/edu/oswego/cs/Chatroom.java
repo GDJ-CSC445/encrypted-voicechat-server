@@ -35,7 +35,6 @@ public class Chatroom extends Thread {
     }
 
     public int getMaxParticipants() {
-        System.out.println(maxParticipants);
         return maxParticipants;
     }
 

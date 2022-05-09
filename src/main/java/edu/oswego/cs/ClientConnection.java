@@ -137,7 +137,6 @@ public class ClientConnection extends Thread {
      */
     private void createChatroomRequest(ParticipantData participantData) throws IOException {
         // Most of the content in this function is error handling
-        System.out.println(Arrays.toString(participantData.getParams()));
         if (participantData.getParams().length == 0){
             ErrorPacket errorPacket = new ErrorPacket(ErrorOpcode.UNDEF, "No parameters specified in the packet.");
             socket.getOutputStream().write(errorPacket.getBytes());

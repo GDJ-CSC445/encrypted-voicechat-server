@@ -60,6 +60,9 @@ public class VoicechatServer {
                          }
                      }
                  }
+                 else if (userIn.startsWith("-c")) {
+                     chatrooms = new ConcurrentHashMap<>();
+                 }
              }
          } ).start();
 
