@@ -48,7 +48,6 @@ public class ClientConnection extends Thread {
                     if (! lock)
                         if (-1 == in.read(buffer, 0, buffer.length))
                             break;
-                    System.out.println("GETTING STUCK? " + Arrays.toString(buffer));
                     // spawns a new thread to parse packet
 //                    new Thread(() -> {
                         // gets a packet object from the buffer received through TCP/IP
