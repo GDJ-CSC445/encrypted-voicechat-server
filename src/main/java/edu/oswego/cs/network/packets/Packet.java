@@ -21,8 +21,8 @@ public abstract class Packet {
     abstract public byte[] getBytes();
 
     public static Packet parse(byte[] bytes) {
-        PacketOpcode opcode = PacketOpcode.getOpcode( bytes[1] );
 
+        PacketOpcode opcode = PacketOpcode.getOpcode( bytes[1] );
         switch (opcode) {
             case SOUND: return PacketFactory.parseSoundDataPacket(bytes);
             case PARTICIPANT: return PacketFactory.parseParticipantDataPacket(bytes);
@@ -30,6 +30,8 @@ public abstract class Packet {
             case ERR: return PacketFactory.parseErrorPacket(bytes);
             case PARTICIPANT_ACK: return PacketFactory.parseParticipantACKPacket(bytes);
             case DEBUG: return PacketFactory.parseDebugPacket(bytes);
+            case SRQ : return PacketFactory.parseSoundDataPacket(bytes);
+            case SACK: return PacketFactory.parseSoundDataPacket(bytes);
             default: ;
         }
         return null;
@@ -81,12 +83,11 @@ public abstract class Packet {
             return new ParticipantData(participantOpcode, port);
         }
 
-        public static SoundData parseSoundDataPacket(byte[] bytes) {
+        public static SoundPacket parseSoundDataPacket(byte[] bytes) {
+            PacketOpcode opcode = PacketOpcode.getOpcode(new BigInteger(new byte[]{bytes[0], bytes[1]}).intValue());
             int port = new BigInteger( new byte[]{bytes[2], bytes[3]} ).intValue();
-            int seqenceNumber = new BigInteger(new byte[]{bytes[4], bytes[5]}).intValue();
-            byte[] soundBytes = Arrays.copyOfRange(bytes ,6, bytes.length);
 
-            return new SoundData(port, soundBytes, seqenceNumber);
+            return new SoundPacket(opcode, port);
         }
 
         public static DebugPacket parseDebugPacket(byte[] bytes) {

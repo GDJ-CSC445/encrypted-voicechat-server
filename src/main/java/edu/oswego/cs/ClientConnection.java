@@ -1,13 +1,17 @@
 package edu.oswego.cs;
 
 import edu.oswego.cs.network.opcodes.ErrorOpcode;
+import edu.oswego.cs.network.opcodes.PacketOpcode;
 import edu.oswego.cs.network.opcodes.ParticipantOpcode;
 import edu.oswego.cs.network.packets.*;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Handler for client connection requests on a new thread
@@ -21,9 +25,56 @@ public class ClientConnection extends Thread {
     private final VoicechatServer voicechatServer;
     private Chatroom chatroom = null;
 
+    private volatile boolean lock = false;
+
     public ClientConnection(int port, VoicechatServer voicechatServer) {
         this.PORT = port;
         this.voicechatServer = voicechatServer;
+    }
+
+    /**
+     * Thread runner for reading incoming TCP/IP voicechat packets from client
+     */
+    @Override
+    public void run() {
+        try {
+            serverSocket = new ServerSocket(PORT);
+            socket = serverSocket.accept();
+            InputStream in = socket.getInputStream();
+            while(socket.isConnected()) {
+                if (! lock) {
+                    byte[] buffer = new byte[MAX_BUFFER];
+                    // ready to accept a new packet at any time - blocks until a packet is received
+                    if (! lock)
+                        if (-1 == in.read(buffer, 0, buffer.length))
+                            break;
+                    System.out.println("GETTING STUCK? " + Arrays.toString(buffer));
+                    // spawns a new thread to parse packet
+//                    new Thread(() -> {
+                        // gets a packet object from the buffer received through TCP/IP
+                        Packet packet = Packet.parse(buffer);
+                        if (packet == null) return;
+                        if (packet.getOpcode() == PacketOpcode.SACK || packet.getOpcode() == PacketOpcode.SRQ) {
+                            lock = true;
+                        }
+                        // calls the respective method to handle each packet received
+                        parsePacket(packet);
+//                    }).start();
+                }
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            // Always try to close the TCP/IP connection if not being used
+            VoicechatServer.displayInfo("Client on port " + PORT + " has disconnected.");
+            try {
+                if (chatroom != null) chatroom.removeClientConnection(PORT);
+                voicechatServer.removeConnection(PORT);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -34,8 +85,9 @@ public class ClientConnection extends Thread {
         if (packet == null) return;
         try {
             switch (packet.getOpcode()) {
-                case PARTICIPANT: participantRequest((ParticipantData) packet);
-                case DEBUG:       debugRequest((DebugPacket) packet);
+                case PARTICIPANT: { participantRequest((ParticipantData) packet); break; }
+                case SRQ:         { soundRequest((SoundPacket) packet); ;break; }
+                case DEBUG:       { debugRequest((DebugPacket) packet); break; }
             }
         } catch (Exception e) {}
     }
@@ -65,6 +117,28 @@ public class ClientConnection extends Thread {
                 leaveChatroomRequest();
                 break;
             }
+        }
+    }
+
+    private void soundRequest(SoundPacket packet) throws IOException, ClassNotFoundException {
+        if (chatroom != null) {
+            VoicechatServer.displayInfo("Sound data RQ from port: " + packet.getPort());
+            lock = true;
+            byte[] soundData=null;
+            try {
+                ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+                soundData = (byte[]) objectInputStream.readObject();
+                System.out.println(Arrays.toString(soundData));
+//                objectInputStream.close();
+            } catch (Exception e) {e.printStackTrace();}
+
+            FileOutputStream fileOut = new FileOutputStream("received_audio.wav");
+            fileOut.write(soundData);
+            VoicechatServer.displayInfo("Sound data received from port: " + packet.getPort());
+
+            chatroom.broadcastSoundDataToChatroom(soundData, this);
+
+            lock = false;
         }
     }
 
@@ -176,46 +250,6 @@ public class ClientConnection extends Thread {
 
     public void sendPacketToClient(Packet packet) throws IOException {
         socket.getOutputStream().write(packet.getBytes());
-    }
-
-    /**
-     * Thread runner for reading incoming TCP/IP voicechat packets from client
-     */
-    @Override
-    public void run() {
-        try {
-            serverSocket = new ServerSocket(PORT);
-            socket = serverSocket.accept();
-            InputStream in = socket.getInputStream();
-            while(socket.isConnected()) {
-
-                byte[] buffer = new byte[MAX_BUFFER];
-                // ready to accept a new packet at any time - blocks until a packet is received
-                if (-1 == in.read(buffer, 0, buffer.length))
-                    break;
-
-                // spawns a new thread to parse packet
-                new Thread( () -> {
-                    // gets a packet object from the buffer received through TCP/IP
-                    Packet packet = Packet.parse(buffer);
-                    if (packet == null) return ;
-                    // calls the respective method to handle each packet received
-                    parsePacket(packet);
-               }).start();
-
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            // Always try to close the TCP/IP connection if not being used
-            voicechatServer.displayInfo("Client on port " + PORT + " has disconnected.");
-            try {
-                if (chatroom != null) chatroom.removeClientConnection(PORT);
-                voicechatServer.removeConnection(PORT);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     public int getPort() {

@@ -6,7 +6,7 @@ public enum ErrorOpcode {
     CHATROOM_DNE(0),
     CHATROOM_FULL(1),
     CHATROOM_PASS_FALSE(2),
-    CHATROOM_EXISTS(3);
+    CHATROOM_EXISTS(3);;
 
     private final int opcodeInt;
 
