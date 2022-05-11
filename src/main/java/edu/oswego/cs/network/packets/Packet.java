@@ -21,8 +21,8 @@ public abstract class Packet {
     abstract public byte[] getBytes();
 
     public static Packet parse(byte[] bytes) {
-        PacketOpcode opcode = PacketOpcode.getOpcode( bytes[1] );
 
+        PacketOpcode opcode = PacketOpcode.getOpcode( bytes[1] );
         switch (opcode) {
             case SOUND: return PacketFactory.parseSoundDataPacket(bytes);
             case PARTICIPANT: return PacketFactory.parseParticipantDataPacket(bytes);
@@ -30,6 +30,8 @@ public abstract class Packet {
             case ERR: return PacketFactory.parseErrorPacket(bytes);
             case PARTICIPANT_ACK: return PacketFactory.parseParticipantACKPacket(bytes);
             case DEBUG: return PacketFactory.parseDebugPacket(bytes);
+            case SRQ : return PacketFactory.parseSoundDataPacket(bytes);
+            case SACK: return PacketFactory.parseSoundDataPacket(bytes);
             default: ;
         }
         return null;

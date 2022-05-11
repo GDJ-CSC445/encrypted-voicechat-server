@@ -221,7 +221,7 @@ public class VoicechatServer {
     }
 
 
-    public void displayInfo(String msg) {
+    public static void displayInfo(String msg) {
         System.out.println(TEXT_GREEN + "[INFO]" + TEXT_RESET + " " + msg);
     }
 
